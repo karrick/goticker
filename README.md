@@ -2,6 +2,8 @@
 
 Tiny Golang ticker library
 
+[![GoDoc](https://godoc.org/github.com/karrick/goticker?status.svg)](https://godoc.org/github.com/karrick/goticker)
+
 ## Description
 
 A Ticker periodically invokes a callback function with the value of
