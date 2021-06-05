@@ -1,6 +1,7 @@
 package goticker
 
 import (
+	"errors"
 	"sync/atomic"
 	"time"
 )
@@ -14,8 +15,12 @@ type Ticker struct {
 	duration time.Duration
 }
 
-// New spawns a go routine that periodically invokes callback every duration
-// nanoseconds, optionally rounded to the nearest duration interval.
+// New spawns a go routine that periodically invokes callback with the value of
+// the current time. The periodicity is determined by duration. The requested
+// duration must be greater than zero; if not, New will panic. The first
+// invocation of the callback can be optionally rounded to the nearest duration
+// interval by passing true for the round argument. Stop the ticker to release
+// associated resources.
 //
 //     func main() {
 //         ticker1 := goticker.New(5*time.Second, false, func(t time.Time) {
@@ -34,6 +39,10 @@ type Ticker struct {
 //         ticker2.Stop()
 //     }
 func New(duration time.Duration, round bool, callback func(time.Time)) *Ticker {
+	if duration <= 0 {
+		panic(errors.New("non-positive interval for New"))
+	}
+
 	t := &Ticker{duration: duration, callback: callback}
 
 	// By sending duration to methods on stack, we elide an atomic load.
