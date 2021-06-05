@@ -5,8 +5,10 @@ import (
 	"time"
 )
 
-// Ticker periodically invokes callback every time.Duration, optionally rounded
-// to the nearest duration interval.
+// Ticker periodically invokes a callback function with the value of the current
+// time. Allows callers to optionally specify whether invocations should occur
+// at times that are rounded to the nearest duration interval. A Ticker will
+// continue until its Stop method is invoked.
 type Ticker struct {
 	callback func(time.Time)
 	duration time.Duration
