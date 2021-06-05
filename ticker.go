@@ -8,9 +8,8 @@ import (
 // Ticker periodically invokes callback every time.Duration, optionally rounded
 // to the nearest duration interval.
 type Ticker struct {
-	callback  func(time.Time)
-	duration  time.Duration
-	cancelled int32
+	callback func(time.Time)
+	duration time.Duration
 }
 
 // New spawns a go routine that periodically invokes callback every duration
@@ -34,29 +33,32 @@ type Ticker struct {
 //     }
 func New(duration time.Duration, round bool, callback func(time.Time)) *Ticker {
 	t := &Ticker{duration: duration, callback: callback}
+
+	// By sending duration to methods on stack, we elide an atomic load.
 	if round {
-		go t.runRound()
+		go t.runRound(duration)
 	} else {
-		go t.run()
+		go t.run(duration)
 	}
+
 	return t
 }
 
 // Stop will stop the Ticker preventing any further invocations of the Ticker's
 // callback.
 func (t *Ticker) Stop() {
-	atomic.StoreInt32(&t.cancelled, 1)
+	atomic.StoreInt64((*int64)(&t.duration), 0)
 }
 
-func (t *Ticker) run() {
+func (t *Ticker) run(duration time.Duration) {
 	prev := time.Now()
 
 	for {
 		// Next time to wake up should be duration nanoseconds after
 		// previous wake up time, ignoring how long previous callback took.
-		time.Sleep(prev.Add(t.duration).Sub(prev))
+		time.Sleep(prev.Add(duration).Sub(prev))
 
-		if atomic.LoadInt32(&t.cancelled) > 0 {
+		if duration = time.Duration(atomic.LoadInt64((*int64)(&t.duration))); duration == 0 {
 			return
 		}
 
@@ -65,15 +67,15 @@ func (t *Ticker) run() {
 	}
 }
 
-func (t *Ticker) runRound() {
+func (t *Ticker) runRound(duration time.Duration) {
 	prev := time.Now()
 
 	for {
 		// Next time to wake up should be duration nanoseconds after
 		// previous wake up time, ignoring how long previous callback took.
-		time.Sleep(prev.Add(t.duration).Round(t.duration).Sub(prev))
+		time.Sleep(prev.Add(duration).Round(duration).Sub(prev))
 
-		if atomic.LoadInt32(&t.cancelled) > 0 {
+		if duration = time.Duration(atomic.LoadInt64((*int64)(&t.duration))); duration == 0 {
 			return
 		}
 
