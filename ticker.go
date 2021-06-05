@@ -11,7 +11,6 @@ type Ticker struct {
 	callback  func(time.Time)
 	duration  time.Duration
 	cancelled int32
-	round     bool
 }
 
 // New spawns a go routine that periodically invokes callback every duration
@@ -34,8 +33,12 @@ type Ticker struct {
 //         ticker2.Stop()
 //     }
 func New(duration time.Duration, round bool, callback func(time.Time)) *Ticker {
-	t := &Ticker{duration: duration, round: round, callback: callback}
-	go t.run()
+	t := &Ticker{duration: duration, callback: callback}
+	if round {
+		go t.runRound()
+	} else {
+		go t.run()
+	}
 	return t
 }
 
@@ -51,11 +54,24 @@ func (t *Ticker) run() {
 	for {
 		// Next time to wake up should be duration nanoseconds after
 		// previous wake up time, ignoring how long previous callback took.
-		next := prev.Add(t.duration)
-		if t.round {
-			next = next.Round(t.duration)
+		time.Sleep(prev.Add(t.duration).Sub(prev))
+
+		if atomic.LoadInt32(&t.cancelled) > 0 {
+			return
 		}
-		time.Sleep(next.Sub(prev))
+
+		prev = time.Now()
+		t.callback(prev)
+	}
+}
+
+func (t *Ticker) runRound() {
+	prev := time.Now()
+
+	for {
+		// Next time to wake up should be duration nanoseconds after
+		// previous wake up time, ignoring how long previous callback took.
+		time.Sleep(prev.Add(t.duration).Round(t.duration).Sub(prev))
 
 		if atomic.LoadInt32(&t.cancelled) > 0 {
 			return
