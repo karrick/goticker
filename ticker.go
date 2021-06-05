@@ -1,61 +1,67 @@
 package goticker
 
-import "time"
+import (
+	"sync/atomic"
+	"time"
+)
 
-// NewTicker spawns a go routine that periodically invokes callback every
-// duration nanoseconds. It returns a channel that when closed, stops the go
-// routine.
+// Ticker periodically invokes callback every time.Duration, optionally rounded
+// to the nearest duration interval.
+type Ticker struct {
+	callback  func(time.Time)
+	duration  time.Duration
+	cancelled int32
+	round     bool
+}
+
+// New spawns a go routine that periodically invokes callback every duration
+// nanoseconds, optionally rounded to the nearest duration interval.
 //
-//      func main() {
-//          cancel1 := goticker.NewTicker(5*time.Second, false, func(t time.Time) {
-//              fmt.Println(t, false)
-//              time.Sleep(1)
-//          })
+//     func main() {
+//         ticker1 := goticker.New(5*time.Second, false, func(t time.Time) {
+//             fmt.Println(t, false)
+//             time.Sleep(1)
+//         })
+//         ticker2 := goticker.New(5*time.Second, true, func(t time.Time) {
+//             fmt.Println(t, true)
+//             time.Sleep(1)
+//         })
 //
-//          cancel2 := goticker.NewTicker(5*time.Second, true, func(t time.Time) {
-//              fmt.Println(t, true)
-//              time.Sleep(1)
-//          })
+//         <-time.After(time.Minute)
+//         fmt.Printf("\n\ttest complete; stopping ticker...\n")
 //
-//          <-time.After(time.Minute)
-//          fmt.Printf("\n\ttest complete; stopping ticker...\n")
-//
-//          close(cancel1)
-//          close(cancel2)
-//      }
-func NewTicker(duration time.Duration, round bool, callback func(time.Time)) chan struct{} {
-	// Create buffered channel because while caller only needs to close it to
-	// stop the ticker, they might send to it instead, and we don't want that
-	// send action to block their go routine while this go routine is waiting
-	// for callback to return.
-	cancel := make(chan struct{}, 1)
+//         ticker1.Stop()
+//         ticker2.Stop()
+//     }
+func New(duration time.Duration, round bool, callback func(time.Time)) *Ticker {
+	t := &Ticker{duration: duration, round: round, callback: callback}
+	go t.run()
+	return t
+}
 
-	go func() {
-		prev := time.Now()
+// Stop will stop the Ticker preventing any further invocations of the Ticker's
+// callback.
+func (t *Ticker) Stop() {
+	atomic.StoreInt32(&t.cancelled, 1)
+}
 
-		for {
-			// Next time to wake up should be duration nanoseconds after
-			// previous wake up time, ignoring how long previous callback took.
-			next := prev.Add(duration)
-			if round {
-				next = next.Round(duration)
-			}
-			time.Sleep(next.Sub(prev))
+func (t *Ticker) run() {
+	prev := time.Now()
 
-			// Non-blocking receive from cancel channel.
-			select {
-			case _ = <-cancel:
-				// Channel has been closed or received from.
-				return
-			default:
-				// Default case when channel remains open yet have received
-				// nothing.
-			}
-
-			prev = time.Now()
-			callback(prev)
+	for {
+		// Next time to wake up should be duration nanoseconds after
+		// previous wake up time, ignoring how long previous callback took.
+		next := prev.Add(t.duration)
+		if t.round {
+			next = next.Round(t.duration)
 		}
-	}()
+		time.Sleep(next.Sub(prev))
 
-	return cancel
+		if atomic.LoadInt32(&t.cancelled) > 0 {
+			return
+		}
+
+		prev = time.Now()
+		t.callback(prev)
+	}
 }
