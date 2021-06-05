@@ -8,15 +8,19 @@ import (
 )
 
 func main() {
-	cancel := goticker.NewTicker(time.Second, func(t time.Time) {
-		fmt.Print(".")
-		hr, min, sec := t.Clock()
-		if sec == 0 /* && min == 0 */ /* && hr == 0 */ {
-			fmt.Printf("\n\tthe time is %v: hr: %d; min: %d\n", t, hr, min)
-		}
+	cancel1 := goticker.NewTicker(5*time.Second, false, func(t time.Time) {
+		fmt.Println(t, false)
+		time.Sleep(1)
 	})
 
-	<-time.After(2 * time.Minute)
+	cancel2 := goticker.NewTicker(5*time.Second, true, func(t time.Time) {
+		fmt.Println(t, true)
+		time.Sleep(1)
+	})
+
+	<-time.After(time.Minute)
 	fmt.Printf("\n\ttest complete; stopping ticker...\n")
-	close(cancel)
+
+	close(cancel1)
+	close(cancel2)
 }
