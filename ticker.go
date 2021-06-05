@@ -98,9 +98,11 @@ func (t *Ticker) run(duration time.Duration) {
 	prev := time.Now()
 
 	for {
-		// Next time to wake up should be duration nanoseconds after
-		// previous wake up time, ignoring how long previous callback took.
-		time.Sleep(prev.Add(duration).Sub(prev))
+		// Next time to wake up should be duration nanoseconds after previous
+		// wake up time, and ignoring how long previous callback took.
+		if d := time.Until(prev.Add(duration)); d > 0 {
+			time.Sleep(d)
+		}
 
 		if duration = time.Duration(atomic.LoadInt64((*int64)(&t.duration))); duration == 0 {
 			return
@@ -115,9 +117,12 @@ func (t *Ticker) runRound(duration time.Duration) {
 	prev := time.Now()
 
 	for {
-		// Next time to wake up should be duration nanoseconds after
-		// previous wake up time, ignoring how long previous callback took.
-		time.Sleep(prev.Add(duration).Round(duration).Sub(prev))
+		// Next time to wake up should be duration nanoseconds after previous
+		// wake up time, rounded to nearest duration interval, and ignoring how
+		// long previous callback took.
+		if d := time.Until(prev.Add(duration).Round(duration)); d > 0 {
+			time.Sleep(d)
+		}
 
 		if duration = time.Duration(atomic.LoadInt64((*int64)(&t.duration))); duration == 0 {
 			return

@@ -8,21 +8,18 @@ import (
 )
 
 func main() {
-	ticker1, err := goticker.New(goticker.Config{Duration: 5 * time.Second, Callback: func(t time.Time) {
-		fmt.Println(t, false)
-		time.Sleep(1)
+	ticker1, err := goticker.New(goticker.Config{Duration: 2 * time.Second, Callback: func(t time.Time) {
+		fmt.Println("TICKER1:", t, time.Since(t))
+		time.Sleep(3)
 	}})
 	if err != nil {
 		panic(err)
 	}
 
-	ticker2, err := goticker.New(goticker.Config{
-		Duration: 5 * time.Second,
-		Round:    true,
-		Callback: func(t time.Time) {
-			fmt.Println(t, true)
-			time.Sleep(1)
-		}})
+	ticker2, err := goticker.New(goticker.Config{Duration: 10 * time.Second, Round: true, Callback: func(t time.Time) {
+		fmt.Println("TICKER2:", t, time.Since(t))
+		time.Sleep(13)
+	}})
 	if err != nil {
 		panic(err)
 	}
