@@ -5,12 +5,20 @@ import (
 	"time"
 )
 
-func TestNewDurationLessThanOne(t *testing.T) {
-	ensurePanic(t, "duration zero", "non-positive interval", func() {
-		_ = New(0, false, func(_ time.Time) {})
+func TestNew(t *testing.T) {
+	t.Run("duration", func(t *testing.T) {
+		t.Run("0", func(t *testing.T) {
+			_, err := New(Config{Callback: func(time.Time) {}})
+			ensureError(t, err, "non-positive interval")
+		})
+		t.Run("negative", func(t *testing.T) {
+			_, err := New(Config{Duration: -time.Millisecond, Callback: func(time.Time) {}})
+			ensureError(t, err, "non-positive interval")
+		})
 	})
-	ensurePanic(t, "duration negative", "non-positive interval", func() {
-		_ = New(-time.Millisecond, false, func(_ time.Time) {})
+	t.Run("callback omitted", func(t *testing.T) {
+		_, err := New(Config{Duration: time.Millisecond})
+		ensureError(t, err, "callback omitted")
 	})
 }
 
@@ -19,9 +27,10 @@ func TestStops(t *testing.T) {
 
 	var prev time.Time
 
-	ticker := New(duration, false, func(t time.Time) {
+	ticker, err := New(Config{Duration: duration, Callback: func(t time.Time) {
 		prev = t
-	})
+	}})
+	ensureError(t, err)
 
 	// Let ticker run for a few intervals, updating prev along the way.
 	<-time.After(5 * duration)

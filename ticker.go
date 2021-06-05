@@ -2,9 +2,29 @@ package goticker
 
 import (
 	"errors"
+	"fmt"
 	"sync/atomic"
 	"time"
 )
+
+// Config is a structure that controls behavior of a newly created Ticker.
+type Config struct {
+	// Callback specifies the callback function that will be invoked by the
+	// Ticker. It will be called with the current time when it is invoked.
+	Callback func(time.Time)
+
+	// Duration specifies how frequently the Callback should be invoked.
+	Duration time.Duration
+
+	// Round controls whether the ticks should occur at time intervals that are
+	// rounded on the tick duration. For example, assume Duration is time.Minute
+	// and the Ticker is created at 13 seconds after the current minute. When
+	// Round is false, then Callback will be invoked every minute, 13 seconds
+	// after the minute started. When Round is true, however, then Callback will
+	// be invoked every minute, at 0 seconds after the minute started, and the
+	// first Callback invocation would happen 47 seconds after New was invoked.
+	Round bool
+}
 
 // Ticker periodically invokes a callback function with the value of the current
 // time. Allows callers to optionally specify whether invocations should occur
@@ -22,37 +42,50 @@ type Ticker struct {
 // interval by passing true for the round argument. Stop the ticker to release
 // associated resources.
 //
-//     func main() {
-//         ticker1 := goticker.New(5*time.Second, false, func(t time.Time) {
-//             fmt.Println(t, false)
-//             time.Sleep(1)
-//         })
-//         ticker2 := goticker.New(5*time.Second, true, func(t time.Time) {
-//             fmt.Println(t, true)
-//             time.Sleep(1)
-//         })
-//
-//         <-time.After(time.Minute)
-//         fmt.Printf("\n\ttest complete; stopping ticker...\n")
-//
-//         ticker1.Stop()
-//         ticker2.Stop()
+//     // Rotate logs every midnight...
+//     logTicker, err := goticker.New(goticker.Config{
+//         Duration: 24 * time.Hour,
+//         Round:    true,
+//         Callback: func(t time.Time) {
+//             logger.Rotate()
+//         }})
+//     if err != nil {
+//         panic(err) // TODO: handle appropriately
 //     }
-func New(duration time.Duration, round bool, callback func(time.Time)) *Ticker {
-	if duration <= 0 {
-		panic(errors.New("non-positive interval for New"))
+//
+//     // some time later...
+//     logTicker.Stop()
+//
+//     // Emit metrics every minute...
+//     metricTicker, err := goticker.New(goticker.Config{
+//         Duration: time.Minute,
+//         Callback: func(t time.Time) {
+//             metrics.Emit()
+//         }})
+//     if err != nil {
+//         panic(err) // TODO: handle appropriately
+//     }
+//
+//     // some time later...
+//     metricTicker.Stop()
+func New(c Config) (*Ticker, error) {
+	if c.Callback == nil {
+		return nil, errors.New("callback omitted")
+	}
+	if c.Duration <= 0 {
+		return nil, fmt.Errorf("non-positive interval for Ticker: %v", c.Duration)
 	}
 
-	t := &Ticker{duration: duration, callback: callback}
+	t := &Ticker{duration: c.Duration, callback: c.Callback}
 
 	// By sending duration to methods on stack, we elide an atomic load.
-	if round {
-		go t.runRound(duration)
+	if c.Round {
+		go t.runRound(c.Duration)
 	} else {
-		go t.run(duration)
+		go t.run(c.Duration)
 	}
 
-	return t
+	return t, nil
 }
 
 // Stop will stop the Ticker preventing any further invocations of the Ticker's
