@@ -14,7 +14,7 @@ invoked.
 
 ## Examples
 
-### Some things need to happen periodically, but not on a specific rounded time:
+### When things need to happen periodically, but not on a specific rounded time:
 
 ```Go
 // Emit metrics every minute...
@@ -31,7 +31,7 @@ if err != nil {
 metricTicker.Stop()
 ```
 
-### Some things need to happen on intervals rounded to nearest duration:
+### When things need to happen on intervals rounded to nearest duration:
 
 ```Go
 // Rotate logs every midnight...
@@ -47,4 +47,55 @@ if err != nil {
 
 // some time later...
 logTicker.Stop()
+```
+
+## Why?
+
+I created this library to eliminate boilerplate code I always end up
+creating in my programs. This certainly might not be remotely similar
+to your boilerplate for similar purposes, but maybe it suits your
+style as well.
+
+When I want to create a task that needs to be run periodically with
+the standard library, I always end up spawning a goroutine that loops
+forever selecting on a time.Ticker's channel and yet another channel I
+need to create to tell that goroutine when to stop the time.Ticker and
+exit the goroutine.
+
+This library serves as a place to hold the ticker boilerplate that I
+tend to lean on using.
+
+```Go
+func NewTicker(duration time.Duration, callback func(time.Time)) chan struct{} {
+    cancel := make(chan struct{}, 1)
+
+    go func() {
+        ticker := time.NewTicker(duration)
+        for {
+            select {
+            case <-cancel:
+                ticker.Stop()
+                return
+            case t := <-ticker.C:
+                callback(t)
+            }
+        }
+    }()
+
+    return cancel
+}
+
+func main() {
+    cancel := NewTicker(time.Second, func(t time.Time) {
+        fmt.Print(".")
+        hr, min, sec := t.Clock()
+        if sec == 0 && min == 0 && hr == 0 {
+            fmt.Printf("\n\tMidnight %v\n, t)
+        }
+    })
+
+    <-time.After(2 * time.Minute)
+    fmt.Printf("\n\ttest complete; stopping ticker...\n")
+    close(cancel)
+}
 ```

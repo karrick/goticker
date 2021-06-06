@@ -35,7 +35,7 @@ type Ticker struct {
 	duration time.Duration
 }
 
-// New spawns a go routine that periodically invokes callback with the value of
+// New spawns a goroutine that periodically invokes callback with the value of
 // the current time. The periodicity is determined by duration. The requested
 // duration must be greater than zero; if not, New will panic. The first
 // invocation of the callback can be optionally rounded to the nearest duration
