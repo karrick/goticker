@@ -2,7 +2,10 @@
 
 Tiny Golang ticker library
 
+[![MIT license](https://img.shields.io/badge/License-MIT-blue.svg)](https://lbesson.mit-license.org/)
+[![made-with-Go](https://img.shields.io/badge/Made%20with-Go-1f425f.svg)](http://golang.org)
 [![GoDoc](https://godoc.org/github.com/karrick/goticker?status.svg)](https://godoc.org/github.com/karrick/goticker)
+[![GoReportCard](https://goreportcard.com/badge/github.com/karrick/goticker)](https://goreportcard.com/report/github.com/karrick/goticker)
 
 ## Description
 
