@@ -36,32 +36,5 @@ func SleepMax(ctx context.Context, maxDuration time.Duration) error {
 // jitter, whether adding base to a negative jitter results in a negative
 // time.Duration, nor whether doubling jitter results in an overflow.
 func SleepJitter(ctx context.Context, base, jitter time.Duration) error {
-	nanos := jitter.Nanoseconds()
-
-	// We want a pseudo-random number between [0, 1).
-	//
-	//     rand.Float64()
-	//
-	// Comments in the rand.Float64 implementation of The math/rand standard
-	// library suggest using a clearer and simpler implementation, but the
-	// library avoids the simpler implementation in order to maintain
-	// compatibility with the random number sequence stream from Go 1. This
-	// function does not have that requirement and we are free to take
-	// advantage of that simplification and optimization:
-	//
-	//     rand.Float64() ::= float64(rand.Int63n(1<<53)) / (1<<53)
-	//
-	// Looking at implementation of rand.Int63n, and knowing that for our use
-	// case n is always a power of 2, namely 1<<53, we can make the below
-	// optimization, eliminating the chance of looping inside rand.Int63n.
-	//
-	//     rand.Int63n(n) ::= rand.Int63() & (n - 1)
-	//
-	i64 := rand.Int63() & ((1 << 53) - 1) // between [0, 1<<53), or technically [0, (1<<53)-1]
-	f64 := float64(i64) / (1 << 53)       // between [0, 1.0)
-	f64 *= 2.0                            // between [0, 2.0)
-	f64 -= 1.0                            // between [-1.0, 1.0)
-	f64 *= float64(nanos)                 // between [-nanos, nanos)
-	d := base + time.Duration(f64)        // between [base-nanos, base+nanos)
-	return Sleep(ctx, d)
+	return Sleep(ctx, base+plusOrMinus(jitter))
 }
