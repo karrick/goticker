@@ -20,15 +20,15 @@ func TestRunSleepLoop(t *testing.T) {
 			ensureError(t, err, context.Canceled.Error())
 		}()
 
-		// Allow to run for a few intervals, updating time stamp along the
-		// way.
+		// Allow to run for a few intervals, updating time stamp along
+		// the way.
 		<-time.After(5 * duration)
 
 		cancel() // Canceling context should cause Run to terminate.
 		stoppedAt := time.Now()
 
-		// Wait a bit longer, and make sure prev has not updated (indicating
-		// callback was invoked).
+		// Wait a bit longer, and make sure prev has not updated
+		// (indicating callback was invoked).
 		<-time.After(100 * duration)
 
 		if !stoppedAt.After(prev) {

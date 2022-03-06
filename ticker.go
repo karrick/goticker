@@ -7,40 +7,47 @@ import (
 	"time"
 )
 
-// Config is a structure that controls behavior of a newly created Ticker.
+// Config is a structure that controls behavior of a newly created
+// Ticker.
 type Config struct {
-	// Callback specifies the callback function that will be invoked by the
-	// Ticker. It will be called with the current time when it is invoked.
+	// Callback specifies the callback function that will be invoked
+	// by the Ticker. It will be called with the current time when it
+	// is invoked.
 	Callback func(time.Time)
 
-	// Duration specifies how frequently the Callback should be invoked.
+	// Duration specifies how frequently the Callback should be
+	// invoked.
 	Duration time.Duration
 
-	// Round controls whether the ticks should occur at time intervals that are
-	// rounded on the tick duration. For example, assume Duration is time.Minute
-	// and the Ticker is created at 13 seconds after the current minute. When
-	// Round is false, then Callback will be invoked every minute, 13 seconds
-	// after the minute started. When Round is true, however, then Callback will
-	// be invoked every minute, at 0 seconds after the minute started, and the
-	// first Callback invocation would happen 47 seconds after New was invoked.
+	// Round controls whether the ticks should occur at time intervals
+	// that are rounded on the tick duration. For example, assume
+	// Duration is time.Minute and the Ticker is created at 13 seconds
+	// after the current minute. When Round is false, then Callback
+	// will be invoked every minute, 13 seconds after the minute
+	// started. When Round is true, however, then Callback will be
+	// invoked every minute, at 0 seconds after the minute started,
+	// and the first Callback invocation would happen 47 seconds after
+	// New was invoked.
 	Round bool
 }
 
-// Ticker periodically invokes a callback function with the value of the current
-// time. Allows callers to optionally specify whether invocations should occur
-// at times that are rounded to the nearest duration interval. A Ticker will
-// continue until its Stop method is invoked.
+// Ticker periodically invokes a callback function with the value of
+// the current time. Allows callers to optionally specify whether
+// invocations should occur at times that are rounded to the nearest
+// duration interval. A Ticker will continue until its Stop method is
+// invoked.
 type Ticker struct {
 	callback func(time.Time)
 	duration time.Duration
 }
 
-// New spawns a goroutine that periodically invokes callback with the value of
-// the current time. The periodicity is determined by duration. The requested
-// duration must be greater than zero; if not, New will panic. The first
-// invocation of the callback can be optionally rounded to the nearest duration
-// interval by passing true for the round argument. Stop the ticker to release
-// associated resources.
+// New spawns a goroutine that periodically invokes callback with the
+// value of the current time. The periodicity is determined by
+// duration. The requested duration must be greater than zero; if not,
+// New will panic. The first invocation of the callback can be
+// optionally rounded to the nearest duration interval by passing true
+// for the round argument. Stop the ticker to release associated
+// resources.
 //
 //     // Rotate logs every midnight...
 //     logTicker, err := goticker.New(goticker.Config{
@@ -78,7 +85,8 @@ func New(c Config) (*Ticker, error) {
 
 	t := &Ticker{duration: c.Duration, callback: c.Callback}
 
-	// By sending duration to methods on stack, we elide an atomic load.
+	// By sending duration to methods on stack, we elide an atomic
+	// load.
 	if c.Round {
 		go t.runRound(c.Duration)
 	} else {
@@ -88,8 +96,8 @@ func New(c Config) (*Ticker, error) {
 	return t, nil
 }
 
-// Stop will stop the Ticker preventing any further invocations of the Ticker's
-// callback.
+// Stop will stop the Ticker preventing any further invocations of the
+// Ticker's callback.
 func (t *Ticker) Stop() {
 	atomic.StoreInt64((*int64)(&t.duration), 0)
 }
@@ -98,8 +106,9 @@ func (t *Ticker) run(duration time.Duration) {
 	prev := time.Now()
 
 	for {
-		// Next time to wake up should be duration nanoseconds after previous
-		// wake up time, and ignoring how long previous callback took.
+		// Next time to wake up should be duration nanoseconds after
+		// previous wake up time, and ignoring how long previous
+		// callback took.
 		if d := time.Until(prev.Add(duration)); d > 0 {
 			time.Sleep(d)
 		}
@@ -117,9 +126,9 @@ func (t *Ticker) runRound(duration time.Duration) {
 	prev := time.Now()
 
 	for {
-		// Next time to wake up should be duration nanoseconds after previous
-		// wake up time, rounded to nearest duration interval, and ignoring how
-		// long previous callback took.
+		// Next time to wake up should be duration nanoseconds after
+		// previous wake up time, rounded to nearest duration
+		// interval, and ignoring how long previous callback took.
 		if d := time.Until(prev.Add(duration).Round(duration)); d > 0 {
 			time.Sleep(d)
 		}

@@ -5,8 +5,8 @@ import (
 	"time"
 )
 
-// RunSleepLoop repeatedly invokes callback at a periodicity specified by
-// duration, until the context is closed.
+// RunSleepLoop repeatedly invokes callback at a periodicity specified
+// by duration, until the context is closed.
 func RunSleepLoop(ctx context.Context, interval time.Duration, callback func(time.Time)) error {
 	// One-time preperation before starting loop.
 	ticker := time.NewTicker(interval)
@@ -28,8 +28,8 @@ func RunSleepLoop(ctx context.Context, interval time.Duration, callback func(tim
 	}
 }
 
-// SleepRunLoop repeatedly invokes callback at a periodicity specified by
-// duration, until the context is closed.
+// SleepRunLoop repeatedly invokes callback at a periodicity specified
+// by duration, until the context is closed.
 func SleepRunLoop(ctx context.Context, interval time.Duration, callback func(time.Time)) error {
 	// One-time preperation before starting loop.
 	ticker := time.NewTicker(interval)
