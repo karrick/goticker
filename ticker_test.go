@@ -27,20 +27,24 @@ func TestStops(t *testing.T) {
 
 	var prev time.Time
 
-	ticker, err := New(Config{Interval: duration, Callback: func(t time.Time) {
-		prev = t
-	}})
+	ticker, err := New(Config{
+		Interval: duration,
+		Callback: func(t time.Time) {
+			prev = t
+		},
+	})
 	ensureError(t, err)
 
-	// Let ticker run for a few intervals, updating prev along the way.
+	// Let ticker run for a few intervals, updating prev along the
+	// way.
 	<-time.After(5 * duration)
-
 	ticker.Stop()
-	stoppedAt := time.Now()
 
-	// Let's wait a bit longer, and make sure prev has not updated (indicating
-	// callback was invoked).
-	<-time.After(100 * duration)
+	// Let's wait a bit longer, and make sure prev has not updated
+	// (indicating callback was invoked).
+	<-time.After(10 * duration)
+
+	stoppedAt := time.Now()
 	if !stoppedAt.After(prev) {
 		t.Errorf("stoppedAt: %v; prev: %v", stoppedAt, prev)
 	}
