@@ -6,19 +6,19 @@ import (
 )
 
 func TestNew(t *testing.T) {
-	t.Run("duration", func(t *testing.T) {
+	t.Run("interval", func(t *testing.T) {
 		t.Run("0", func(t *testing.T) {
 			_, err := New(Config{Callback: func(time.Time) {}})
-			ensureError(t, err, "non-positive interval")
+			ensureError(t, err, "not greater than zero")
 		})
 		t.Run("negative", func(t *testing.T) {
-			_, err := New(Config{Duration: -time.Millisecond, Callback: func(time.Time) {}})
-			ensureError(t, err, "non-positive interval")
+			_, err := New(Config{Interval: -time.Millisecond, Callback: func(time.Time) {}})
+			ensureError(t, err, "not greater than zero")
 		})
 	})
 	t.Run("callback omitted", func(t *testing.T) {
-		_, err := New(Config{Duration: time.Millisecond})
-		ensureError(t, err, "callback omitted")
+		_, err := New(Config{Interval: time.Millisecond})
+		ensureError(t, err, "Callback omitted")
 	})
 }
 
@@ -27,7 +27,7 @@ func TestStops(t *testing.T) {
 
 	var prev time.Time
 
-	ticker, err := New(Config{Duration: duration, Callback: func(t time.Time) {
+	ticker, err := New(Config{Interval: duration, Callback: func(t time.Time) {
 		prev = t
 	}})
 	ensureError(t, err)

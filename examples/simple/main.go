@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	ticker1, err := goticker.New(goticker.Config{Duration: 2 * time.Second, Callback: func(t time.Time) {
+	ticker1, err := goticker.New(goticker.Config{Interval: 2 * time.Second, Callback: func(t time.Time) {
 		fmt.Println("TICKER1:", t, time.Since(t))
 		time.Sleep(3)
 	}})
@@ -16,9 +16,17 @@ func main() {
 		panic(err)
 	}
 
-	ticker2, err := goticker.New(goticker.Config{Duration: 10 * time.Second, Round: true, Callback: func(t time.Time) {
+	ticker2, err := goticker.New(goticker.Config{Interval: 10 * time.Second, Round: 10 * time.Second, Callback: func(t time.Time) {
 		fmt.Println("TICKER2:", t, time.Since(t))
 		time.Sleep(13)
+	}})
+	if err != nil {
+		panic(err)
+	}
+
+	ticker3, err := goticker.New(goticker.Config{Interval: 10 * time.Second, Jitter: 3 * time.Second, Callback: func(t time.Time) {
+		fmt.Println("TICKER3:", t, time.Since(t))
+		time.Sleep(2)
 	}})
 	if err != nil {
 		panic(err)
@@ -29,4 +37,5 @@ func main() {
 
 	ticker1.Stop()
 	ticker2.Stop()
+	ticker3.Stop()
 }

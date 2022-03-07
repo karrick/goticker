@@ -22,7 +22,7 @@ invoked.
 ```Go
 // Emit metrics every minute...
 metricTicker, err := goticker.New(goticker.Config{
-    Duration: time.Minute,
+    Interval: time.Minute,
     Callback: func(t time.Time) {
         metrics.Emit()
     }})
@@ -37,10 +37,28 @@ metricTicker.Stop()
 ### When things need to happen on intervals rounded to nearest duration:
 
 ```Go
+// Rotate logs every 24 hours, on the hour...
+logTicker, err := goticker.New(goticker.Config{
+    Round:    time.Hour,
+    Interval: 24 * time.Hour,
+    Callback: func(t time.Time) {
+        logger.Rotate()
+    }})
+if err != nil {
+    panic(err) // TODO: handle appropriately
+}
+
+// some time later...
+logTicker.Stop()
+```
+
+A slightly different variation:
+
+```Go
 // Rotate logs every midnight...
 logTicker, err := goticker.New(goticker.Config{
-    Round:    true,
-    Duration: 24 * time.Hour,
+    Round:    24 * time.Hour,
+    Interval: 24 * time.Hour,
     Callback: func(t time.Time) {
         logger.Rotate()
     }})
